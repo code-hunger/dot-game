@@ -5,8 +5,8 @@
     NEAR_TOP = SPACE * (1 - NEAR),
     NEAR_LEFT = NEAR_TOP, NEAR_RIGHT = NEAR_BOTTOM,
     OFFSET_X, OFFSET_Y,
-    LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_DIR, // DIR: 0 = right, 1 = down
-    nodes = [];
+    LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN, HOVER,
+    nodes = {};
 
     function drawDots(context) {
         for (var i = 0, len = WIDTH * SPACE; i < len; i += SPACE) {
@@ -17,35 +17,67 @@
         context.fill();
     }
 
+    function fromNode2(dot) {
+        return (dot.x - 1) * WIDTH + dot.y;
+    }
+
+    function surfaceClicked(context) {
+        if(!HOVER) return;
+
+        var goesRight = LAST_HOVER_RIGHT / SPACE == 1,
+            dotFirst = {
+                x: LAST_HOVER_X / SPACE,
+                y: LAST_HOVER_Y / SPACE,
+            }, 
+            dotSecond = {
+                x: dotFirst.x + goesRight,
+                y: dotFirst.y + !goesRight, 
+            }, 
+            dotFirstIndex = fromNode2(dotFirst), 
+            dotSecondIndex = fromNode2(dotSecond); 
+
+        if(!nodes[dotFirstIndex]) nodes[dotFirstIndex] = [dotSecondIndex];
+        else nodes[dotFirstIndex].push(dotSecondIndex);
+        if(!nodes[dotSecondIndex]) nodes[dotSecondIndex] = [dotFirstIndex];
+        else nodes[dotSecondIndex].push(dotFirstIndex);
+
+        context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
+    }
+
     function mouseMove(context, x, y) {
         var relativeX = x % SPACE, relativeY = y % SPACE,
         lineX = x - relativeX, lineY = y - relativeY;
 
-        if(LAST_HOVER_DIR == 1)
-            context.clearRect(LAST_HOVER_X, LAST_HOVER_Y, SIZE, SPACE);
-        else
-            context.clearRect(LAST_HOVER_X, LAST_HOVER_Y, SPACE, SIZE);
+        context.clearRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
+
+        HOVER = true;
 
         if(relativeY < NEAR_BOTTOM){
-            context.fillRect(lineX, lineY, SPACE, SIZE);
             LAST_HOVER_X = lineX;
             LAST_HOVER_Y = lineY;
-            LAST_HOVER_DIR = 0;
+            LAST_HOVER_RIGHT = SPACE;
+            LAST_HOVER_DOWN = SIZE;
         } else if (relativeY > NEAR_TOP) {
-            context.fillRect(lineX, lineY + SPACE, SPACE, SIZE);
             LAST_HOVER_X = lineX;
             LAST_HOVER_Y = lineY + SPACE;
-            LAST_HOVER_DIR = 0;
+            LAST_HOVER_RIGHT = SPACE;
+            LAST_HOVER_DOWN = SIZE;
         } else if (relativeX < NEAR_RIGHT ) {
-            context.fillRect(lineX, lineY, SIZE, SPACE);
             LAST_HOVER_X = lineX;
             LAST_HOVER_Y = lineY;
-            LAST_HOVER_DIR = 1;
+            LAST_HOVER_RIGHT = SIZE;
+            LAST_HOVER_DOWN = SPACE;
         } else if (relativeX > NEAR_LEFT) {
-            context.fillRect(lineX + SPACE, lineY, SIZE, SPACE);
             LAST_HOVER_X = lineX + SPACE;
             LAST_HOVER_Y = lineY;
-            LAST_HOVER_DIR = 1;
+            LAST_HOVER_RIGHT = SIZE;
+            LAST_HOVER_DOWN = SPACE;
+        } else {
+            HOVER = false;
+        }
+
+        if(HOVER) {
+            context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
         }
     }
 
@@ -74,6 +106,9 @@
 
         canvas_hover.addEventListener('mousemove', function (e) {
             mouseMove(hover_context, e.pageX - OFFSET_X, e.pageY - OFFSET_Y);
+        });
+        canvas_hover.addEventListener('click', function(e) {
+            surfaceClicked(context);
         });
     });
 })();
