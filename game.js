@@ -1,12 +1,18 @@
 (function(){
     'use strict';
     var WIDTH = 10, HEIGHT = 10, SPACE = 70, SIZE = 5, PADDING = 3, NEAR = 0.1,
-    NEAR_BOTTOM = SPACE * NEAR + SIZE,
-    NEAR_TOP = SPACE * (1 - NEAR),
-    NEAR_LEFT = NEAR_TOP, NEAR_RIGHT = NEAR_BOTTOM,
-    OFFSET_X, OFFSET_Y,
-    LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN, HOVER,
-    nodes = {}, mouse = {};
+        NEAR_BOTTOM = SPACE * NEAR + SIZE,
+        NEAR_TOP = SPACE * (1 - NEAR),
+        NEAR_LEFT = NEAR_TOP, NEAR_RIGHT = NEAR_BOTTOM,
+        OFFSET_X, OFFSET_Y,
+        LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN, HOVER, 
+        PLAYER_COUNT = parseInt(prompt("How many players?", 2)),
+        PLAYER_COLORS = ['red', 'green', 'blue', 'yellow', 'violet'],
+        PLAYER_NOW = -1,
+        nodes = {}, mouse = {}, which_player;
+
+    if(PLAYER_COUNT > PLAYER_COLORS.length) 
+        return alert("There can be at most " + PLAYER_COLORS.length + " players!");
 
     function drawDots(context) {
         for (var i = 0, len = WIDTH * SPACE; i < len; i += SPACE) {
@@ -18,10 +24,12 @@
     }
 
     function fromNode2(a, b) {
-        if(typeof a == 'object')
-            return a.y * WIDTH + a.x;
-        else 
-            return b * WIDTH + a;
+        var x = a, y = b;
+        if(typeof a == 'object') {
+            x = a.x; 
+            y = a.y;
+        }
+        return y * WIDTH + x;
     }
 
     function toNode2(nodeIndex) {
@@ -30,26 +38,25 @@
 
     function thereIsNode(pointA, pointB) {
         if(typeof pointA != 'number' || typeof pointB != 'number') throw 'pointA or pointB is not a number!';
-        return nodes[pointA].indexOf(pointB) > -1;
+        return nodes[pointA] && nodes[pointA].indexOf(pointB) > -1;
     }
 
     function drawSquare(context, pointA) {
         if(typeof pointA == "number") pointA = toNode2(pointA);
-        context.fillStyle = 'red';
+        context.fillStyle = PLAYER_COLORS[PLAYER_NOW];
         var x = pointA.x * SPACE + SIZE, y = pointA.y * SPACE + SIZE;
         // console.log("Space is: ", SPACE, ", coords: ", x1, y1, x2, y2);
         context.fillRect(x, y, SPACE - SIZE, SPACE - SIZE);
-        context.fillStyle = 'black';
     }
 
     function surfaceClicked(context) {
         if(!HOVER) return;
 
-        var goesRight = LAST_HOVER_RIGHT / SPACE == 1,
+        var goesRight = Math.round(LAST_HOVER_RIGHT / SPACE) == 1,
             horizontal = goesRight,
             dotFirst = {
-                x: LAST_HOVER_X / SPACE,
-                y: LAST_HOVER_Y / SPACE,
+                x: Math.round(LAST_HOVER_X / SPACE),
+                y: Math.round(LAST_HOVER_Y / SPACE),
             }, 
             dotSecond = {
                 x: dotFirst.x + goesRight,
@@ -63,6 +70,7 @@
         if(!nodes[dotSecondIndex]) nodes[dotSecondIndex] = [dotFirstIndex];
         else nodes[dotSecondIndex].push(dotFirstIndex);
 
+        context.fillStyle = 'black';
         context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
 
         var topLeft, topRight, bottomLeft, bottomRight;
@@ -95,43 +103,58 @@
                 drawSquare(context, dotFirst);
             }
         }
+
+        nextPlayer();
+    }
+
+    function nextPlayer () {
+        PLAYER_NOW = (++PLAYER_NOW) % PLAYER_COUNT;
+        which_player.innerText = PLAYER_NOW + 1;
+        which_player.style.color = PLAYER_COLORS[PLAYER_NOW];
     }
 
     function mouseMove(context, x, y) {
         var relativeX = x % SPACE, relativeY = y % SPACE,
         lineX = x - relativeX, lineY = y - relativeY;
 
-        document.getElementById('info').innerText = 'mouse: [ ' + x + ' : ' + y + ' ]';
-
         context.clearRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
 
         HOVER = true;
 
         if(relativeY < NEAR_BOTTOM){
-            LAST_HOVER_X = lineX;
+            LAST_HOVER_X = lineX + SIZE;
             LAST_HOVER_Y = lineY;
-            LAST_HOVER_RIGHT = SPACE;
+            LAST_HOVER_RIGHT = SPACE - SIZE;
             LAST_HOVER_DOWN = SIZE;
         } else if (relativeY > NEAR_TOP) {
-            LAST_HOVER_X = lineX;
+            LAST_HOVER_X = lineX + SIZE;
             LAST_HOVER_Y = lineY + SPACE;
-            LAST_HOVER_RIGHT = SPACE;
+            LAST_HOVER_RIGHT = SPACE - SIZE;
             LAST_HOVER_DOWN = SIZE;
         } else if (relativeX < NEAR_RIGHT ) {
             LAST_HOVER_X = lineX;
-            LAST_HOVER_Y = lineY;
+            LAST_HOVER_Y = lineY + SIZE;
             LAST_HOVER_RIGHT = SIZE;
-            LAST_HOVER_DOWN = SPACE;
+            LAST_HOVER_DOWN = SPACE - SIZE;
         } else if (relativeX > NEAR_LEFT) {
             LAST_HOVER_X = lineX + SPACE;
-            LAST_HOVER_Y = lineY;
+            LAST_HOVER_Y = lineY + SIZE;
             LAST_HOVER_RIGHT = SIZE;
-            LAST_HOVER_DOWN = SPACE;
+            LAST_HOVER_DOWN = SPACE - SIZE;
         } else {
             HOVER = false;
         }
 
         if(HOVER) {
+            if(thereIsNode(
+                fromNode2(Math.round(LAST_HOVER_X / SPACE), Math.round(LAST_HOVER_Y / SPACE)),
+                fromNode2(Math.round((LAST_HOVER_X + LAST_HOVER_RIGHT) / SPACE), Math.round(( LAST_HOVER_Y + LAST_HOVER_DOWN) / SPACE))
+                )) {
+                console.log("yep!");
+                HOVER = false;
+                return;
+            }
+            context.fillStyle = PLAYER_COLORS[PLAYER_NOW];
             context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
         }
     }
@@ -166,8 +189,8 @@
             surfaceClicked(context);
         });
 
-        var info = document.createElement('div');
-        info.id = 'info';
-        document.body.appendChild(info);
+        which_player = document.getElementById('which_player');
+
+        nextPlayer();
     });
 })();
