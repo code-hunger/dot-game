@@ -29,8 +29,7 @@
     }
 
     function thereIsNode(pointA, pointB) {
-        if(typeof pointA != 'number') throw new Error('pointA is not a number!');
-        if(typeof pointB != 'number') throw new Error('pointB is not a number!');
+        if(typeof pointA != 'number' || typeof pointB != 'number') throw 'pointA or pointB is not a number!';
         return nodes[pointA].indexOf(pointB) > -1;
     }
 
