@@ -9,6 +9,7 @@
         PLAYER_COUNT = parseInt(prompt("How many players?", 2)),
         PLAYER_COLORS = ['red', 'green', 'blue', 'yellow', 'violet'],
         PLAYER_NOW = -1,
+        PLAYERS_SCORE = [],
         nodes = {}, mouse = {}, which_player;
 
     if(PLAYER_COUNT > PLAYER_COLORS.length) 
@@ -47,6 +48,8 @@
         var x = pointA.x * SPACE + SIZE, y = pointA.y * SPACE + SIZE;
         // console.log("Space is: ", SPACE, ", coords: ", x1, y1, x2, y2);
         context.fillRect(x, y, SPACE - SIZE, SPACE - SIZE);
+        PLAYERS_SCORE[PLAYER_NOW] = PLAYERS_SCORE[PLAYER_NOW] ? PLAYERS_SCORE[PLAYER_NOW] + 1 : 1;
+        drawInfoDiv();
     }
 
     function surfaceClicked(context) {
@@ -73,7 +76,7 @@
         context.fillStyle = 'black';
         context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
 
-        var topLeft, topRight, bottomLeft, bottomRight;
+        var topLeft, topRight, bottomLeft, bottomRight, has_made_square = false;
         if(horizontal) {
             topLeft = fromNode2(dotFirst.x, dotFirst.y - 1);
             topRight = fromNode2(dotSecond.x, dotSecond.y - 1);
@@ -83,10 +86,12 @@
             if(thereIsNode(dotFirstIndex, topLeft) && thereIsNode(topLeft, topRight) && thereIsNode(topRight, dotSecondIndex)) {
                 // square on the top
                 drawSquare(context, topLeft);
+                has_made_square = true;
             }
             if(thereIsNode(dotFirstIndex, bottomLeft) && thereIsNode(bottomLeft, bottomRight) && thereIsNode(bottomRight, dotSecondIndex)) {
                 // square on the bottom
                 drawSquare(context, dotFirst);
+                has_made_square = true;
             }
         } else {
             topLeft = fromNode2(dotFirst.x - 1, dotFirst.y);
@@ -97,20 +102,31 @@
             if(thereIsNode(dotFirstIndex, topLeft) && thereIsNode(topLeft, bottomLeft) && thereIsNode(bottomLeft, dotSecondIndex)) {
                 // square on the left
                 drawSquare(context, topLeft);
+                has_made_square = true;
             }
             if(thereIsNode(dotFirstIndex, topRight) && thereIsNode(topRight, bottomRight) && thereIsNode(bottomRight, dotSecondIndex)) {
                 // square on the right
                 drawSquare(context, dotFirst);
+                has_made_square = true;
             }
         }
 
-        nextPlayer();
+        if(!has_made_square) nextPlayer();
     }
 
     function nextPlayer () {
         PLAYER_NOW = (++PLAYER_NOW) % PLAYER_COUNT;
-        which_player.innerText = PLAYER_NOW + 1;
-        which_player.style.color = PLAYER_COLORS[PLAYER_NOW];
+        drawInfoDiv();
+    }
+
+    function drawInfoDiv() {
+        var html = '';
+        for (var i = 0; i < PLAYER_COUNT; i++) {
+            html += '<font color="' + PLAYER_COLORS[i] + '">' + (1+i) + ': ' + (PLAYERS_SCORE[i]||0) + '</font>';
+            if(i == PLAYER_NOW) html += ' - YOUR TURN';
+            html += '<br>';
+        }
+        which_player.innerHTML = html;
     }
 
     function mouseMove(context, x, y) {
@@ -150,7 +166,6 @@
                 fromNode2(Math.round(LAST_HOVER_X / SPACE), Math.round(LAST_HOVER_Y / SPACE)),
                 fromNode2(Math.round((LAST_HOVER_X + LAST_HOVER_RIGHT) / SPACE), Math.round(( LAST_HOVER_Y + LAST_HOVER_DOWN) / SPACE))
                 )) {
-                console.log("yep!");
                 HOVER = false;
                 return;
             }
