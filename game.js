@@ -6,7 +6,7 @@
     NEAR_LEFT = NEAR_TOP, NEAR_RIGHT = NEAR_BOTTOM,
     OFFSET_X, OFFSET_Y,
     LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN, HOVER,
-    nodes = {};
+    nodes = {}, mouse = {};
 
     function drawDots(context) {
         for (var i = 0, len = WIDTH * SPACE; i < len; i += SPACE) {
@@ -17,14 +17,37 @@
         context.fill();
     }
 
-    function fromNode2(dot) {
-        return (dot.x - 1) * WIDTH + dot.y;
+    function fromNode2(a, b) {
+        if(typeof a == 'object')
+            return a.y * WIDTH + a.x;
+        else 
+            return b * WIDTH + a;
+    }
+
+    function toNode2(nodeIndex) {
+        return { x: nodeIndex % WIDTH, y: Math.floor(nodeIndex / WIDTH) };
+    }
+
+    function thereIsNode(pointA, pointB) {
+        if(typeof pointA != 'number') throw new Error('pointA is not a number!');
+        if(typeof pointB != 'number') throw new Error('pointB is not a number!');
+        return nodes[pointA].indexOf(pointB) > -1;
+    }
+
+    function drawSquare(context, pointA) {
+        if(typeof pointA == "number") pointA = toNode2(pointA);
+        context.fillStyle = 'red';
+        var x = pointA.x * SPACE + SIZE, y = pointA.y * SPACE + SIZE;
+        // console.log("Space is: ", SPACE, ", coords: ", x1, y1, x2, y2);
+        context.fillRect(x, y, SPACE - SIZE, SPACE - SIZE);
+        context.fillStyle = 'black';
     }
 
     function surfaceClicked(context) {
         if(!HOVER) return;
 
         var goesRight = LAST_HOVER_RIGHT / SPACE == 1,
+            horizontal = goesRight,
             dotFirst = {
                 x: LAST_HOVER_X / SPACE,
                 y: LAST_HOVER_Y / SPACE,
@@ -42,11 +65,44 @@
         else nodes[dotSecondIndex].push(dotFirstIndex);
 
         context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
+
+        var topLeft, topRight, bottomLeft, bottomRight;
+        if(horizontal) {
+            topLeft = fromNode2(dotFirst.x, dotFirst.y - 1);
+            topRight = fromNode2(dotSecond.x, dotSecond.y - 1);
+            bottomLeft = fromNode2(dotFirst.x, dotFirst.y + 1);
+            bottomRight = fromNode2(dotSecond.x, dotSecond.y + 1);
+
+            if(thereIsNode(dotFirstIndex, topLeft) && thereIsNode(topLeft, topRight) && thereIsNode(topRight, dotSecondIndex)) {
+                // square on the top
+                drawSquare(context, topLeft);
+            }
+            if(thereIsNode(dotFirstIndex, bottomLeft) && thereIsNode(bottomLeft, bottomRight) && thereIsNode(bottomRight, dotSecondIndex)) {
+                // square on the bottom
+                drawSquare(context, dotFirst);
+            }
+        } else {
+            topLeft = fromNode2(dotFirst.x - 1, dotFirst.y);
+            topRight = fromNode2(dotFirst.x + 1, dotFirst.y);
+            bottomLeft = fromNode2(dotSecond.x - 1, dotSecond.y);
+            bottomRight = fromNode2(dotSecond.x + 1, dotSecond.y);
+
+            if(thereIsNode(dotFirstIndex, topLeft) && thereIsNode(topLeft, bottomLeft) && thereIsNode(bottomLeft, dotSecondIndex)) {
+                // square on the left
+                drawSquare(context, topLeft);
+            }
+            if(thereIsNode(dotFirstIndex, topRight) && thereIsNode(topRight, bottomRight) && thereIsNode(bottomRight, dotSecondIndex)) {
+                // square on the right
+                drawSquare(context, dotFirst);
+            }
+        }
     }
 
     function mouseMove(context, x, y) {
         var relativeX = x % SPACE, relativeY = y % SPACE,
         lineX = x - relativeX, lineY = y - relativeY;
+
+        document.getElementById('info').innerText = 'mouse: [ ' + x + ' : ' + y + ' ]';
 
         context.clearRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
 
@@ -110,5 +166,9 @@
         canvas_hover.addEventListener('click', function(e) {
             surfaceClicked(context);
         });
+
+        var info = document.createElement('div');
+        info.id = 'info';
+        document.body.appendChild(info);
     });
 })();
