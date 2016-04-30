@@ -10,7 +10,7 @@
         PLAYER_COLORS = ['red', 'green', 'blue', 'yellow', 'violet'],
         PLAYER_NOW = -1,
         PLAYERS_SCORE = [],
-        nodes = {}, mouse = {}, which_player;
+        lines = {}, mouse = {}, which_player;
 
     if(PLAYER_COUNT > PLAYER_COLORS.length) 
         return alert("There can be at most " + PLAYER_COLORS.length + " players!");
@@ -39,7 +39,7 @@
 
     function thereIsNode(pointA, pointB) {
         if(typeof pointA != 'number' || typeof pointB != 'number') throw 'pointA or pointB is not a number!';
-        return nodes[pointA] && nodes[pointA].indexOf(pointB) > -1;
+        return lines[pointA] && lines[pointA].indexOf(pointB) > -1;
     }
 
     function drawSquare(context, pointA) {
@@ -68,10 +68,10 @@
             dotFirstIndex = fromNode2(dotFirst), 
             dotSecondIndex = fromNode2(dotSecond); 
 
-        if(!nodes[dotFirstIndex]) nodes[dotFirstIndex] = [dotSecondIndex];
-        else nodes[dotFirstIndex].push(dotSecondIndex);
-        if(!nodes[dotSecondIndex]) nodes[dotSecondIndex] = [dotFirstIndex];
-        else nodes[dotSecondIndex].push(dotFirstIndex);
+        if(!lines[dotFirstIndex]) lines[dotFirstIndex] = [dotSecondIndex];
+        else lines[dotFirstIndex].push(dotSecondIndex);
+        if(!lines[dotSecondIndex]) lines[dotSecondIndex] = [dotFirstIndex];
+        else lines[dotSecondIndex].push(dotFirstIndex);
 
         context.fillStyle = 'black';
         context.fillRect(LAST_HOVER_X, LAST_HOVER_Y, LAST_HOVER_RIGHT, LAST_HOVER_DOWN);
